@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Price Forge — Laptop Price Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0b1a2e;--navy2:#0f2340;--teal:#0d9e75;--teal-hover:#0b8865;--teal-light:rgba(13,158,117,.12);
+  --gold:#c9a227;--gold-light:rgba(201,162,39,.15);
+  --surface:#ffffff;--surface2:#f4f6fa;--surface3:#eef0f6;
+  --border:#e0e4ef;--border2:#c8cede;
+  --text:#111827;--text2:#4b5563;--text3:#9ca3af;
+  --danger:#dc2626;--danger-bg:#fef2f2;--danger-border:#fca5a5;
+  --warn:#d97706;--warn-bg:#fffbeb;--warn-border:#fcd34d;
+  --r:12px;--r2:8px;--r3:6px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--surface2);color:var(--text);min-height:100vh;line-height:1.5}
+
+/* ── HEADER ── */
+header{background:var(--navy);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--teal);position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:38px;height:38px;background:var(--teal);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-icon svg{width:22px;height:22px;stroke:#fff;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.brand-name{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#fff;letter-spacing:.5px;line-height:1}
+.brand-sub{font-size:10px;color:var(--gold);letter-spacing:2.5px;font-weight:600;text-transform:uppercase;line-height:1;margin-top:2px}
+.header-badge{background:var(--gold-light);border:1px solid rgba(201,162,39,.4);color:var(--gold);font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;letter-spacing:.5px;display:none}
+@media(min-width:600px){.header-badge{display:block}}
+
+/* ── HERO ── */
+.hero{background:var(--navy2);padding:48px 24px 56px;text-align:center;position:relative;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 90% 70% at 50% -10%,rgba(13,158,117,.18) 0%,transparent 65%);pointer-events:none}
+.hero-eyebrow{display:inline-block;background:var(--teal-light);border:1px solid rgba(13,158,117,.4);color:var(--teal);font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:5px 16px;border-radius:20px;margin-bottom:16px}
+.hero h1{font-family:'Syne',sans-serif;font-size:clamp(26px,5.5vw,46px);font-weight:800;color:#fff;line-height:1.1;position:relative;margin-bottom:12px}
+.hero h1 em{color:var(--teal);font-style:normal}
+.hero p{font-size:15px;color:#8fa3c0;max-width:520px;margin:0 auto;position:relative}
+
+/* ── MAIN LAYOUT ── */
+.main-wrap{max-width:1060px;margin:0 auto;padding:32px 16px 60px;display:grid;grid-template-columns:1fr;gap:24px}
+@media(min-width:800px){.main-wrap{grid-template-columns:1fr 380px;padding:40px 24px 60px}}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:28px}
+.card-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);margin-bottom:22px;display:flex;align-items:center;gap:8px}
+.card-title svg{width:18px;height:18px;stroke:var(--teal);stroke-width:2;fill:none;flex-shrink:0}
+
+/* ── FORM GRID ── */
+.form-grid{display:grid;grid-template-columns:1fr;gap:18px}
+@media(min-width:480px){.form-grid{grid-template-columns:1fr 1fr}}
+
+.field{display:flex;flex-direction:column;gap:6px}
+.field.full{grid-column:1/-1}
+label{font-size:12.5px;font-weight:600;color:var(--text2);letter-spacing:.3px;text-transform:uppercase}
+label span.req{color:var(--danger);margin-left:2px}
+
+/* combobox wrapper */
+.combo{position:relative}
+.combo-input-wrap{position:relative;display:flex;align-items:center}
+.combo-input-wrap svg.search-icon{position:absolute;left:11px;width:15px;height:15px;stroke:var(--text3);stroke-width:2;fill:none;pointer-events:none}
+.combo-input{width:100%;height:42px;border:1.5px solid var(--border2);border-radius:var(--r3);font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);padding:0 36px 0 34px;cursor:pointer;transition:border-color .2s}
+.combo-input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light)}
+.combo-input.error{border-color:var(--danger);background:var(--danger-bg)}
+.combo-arrow{position:absolute;right:10px;width:16px;height:16px;stroke:var(--text3);stroke-width:2;fill:none;pointer-events:none;transition:transform .2s}
+.combo.open .combo-arrow{transform:rotate(180deg)}
+
+.combo-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--border2);border-radius:var(--r2);box-shadow:0 8px 24px rgba(0,0,0,.1);z-index:200;max-height:220px;overflow-y:auto;display:none}
+.combo.open .combo-dropdown{display:block}
+.combo-search{padding:8px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface)}
+.combo-search input{width:100%;height:32px;border:1px solid var(--border2);border-radius:5px;padding:0 10px;font-size:13px;font-family:inherit;color:var(--text);background:var(--surface2)}
+.combo-search input:focus{outline:none;border-color:var(--teal)}
+.combo-option{padding:9px 14px;font-size:13.5px;cursor:pointer;color:var(--text);transition:background .15s}
+.combo-option:hover,.combo-option.focused{background:var(--surface2)}
+.combo-option.selected{background:var(--teal-light);color:var(--teal);font-weight:600}
+.combo-option.disabled{color:var(--text3);cursor:not-allowed;font-style:italic}
+.combo-empty{padding:12px 14px;font-size:13px;color:var(--text3);text-align:center}
+
+/* number input */
+.num-input{width:100%;height:42px;border:1.5px solid var(--border2);border-radius:var(--r3);font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);padding:0 12px;transition:border-color .2s}
+.num-input:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-light)}
+.num-input.error{border-color:var(--danger);background:var(--danger-bg)}
+
+/* toggle group */
+.toggle-group{display:flex;gap:6px;flex-wrap:wrap}
+.toggle-btn{height:36px;padding:0 16px;border:1.5px solid var(--border2);border-radius:20px;font-size:13px;font-weight:500;font-family:inherit;color:var(--text2);background:var(--surface);cursor:pointer;transition:all .2s}
+.toggle-btn:hover{border-color:var(--teal);color:var(--teal)}
+.toggle-btn.active{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:600}
+
+/* checkboxes */
+.check-row{display:flex;gap:20px;flex-wrap:wrap}
+.check-label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text2);user-select:none}
+.check-label input[type=checkbox]{appearance:none;width:18px;height:18px;border:1.5px solid var(--border2);border-radius:4px;cursor:pointer;position:relative;transition:all .2s;flex-shrink:0;background:var(--surface)}
+.check-label input[type=checkbox]:checked{background:var(--teal);border-color:var(--teal)}
+.check-label input[type=checkbox]:checked::after{content:'';position:absolute;top:2px;left:5px;width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg)}
+.check-label input[type=checkbox]:focus{outline:none;box-shadow:0 0 0 3px var(--teal-light)}
+
+/* validation messages */
+.field-error{font-size:12px;color:var(--danger);display:flex;align-items:center;gap:4px;margin-top:2px}
+.field-error svg{width:13px;height:13px;stroke:var(--danger);stroke-width:2.5;fill:none;flex-shrink:0}
+.field-warn{font-size:12px;color:var(--warn);display:flex;align-items:center;gap:4px;margin-top:2px}
+.field-warn svg{width:13px;height:13px;stroke:var(--warn);stroke-width:2.5;fill:none;flex-shrink:0}
+
+/* alert banner */
+.alert{border-radius:var(--r2);padding:12px 16px;font-size:13.5px;display:flex;align-items:flex-start;gap:10px;margin-bottom:16px}
+.alert svg{width:16px;height:16px;stroke-width:2;fill:none;flex-shrink:0;margin-top:1px}
+.alert-error{background:var(--danger-bg);border:1px solid var(--danger-border);color:var(--danger)}
+.alert-error svg{stroke:var(--danger)}
+.alert-warn{background:var(--warn-bg);border:1px solid var(--warn-border);color:var(--warn)}
+.alert-warn svg{stroke:var(--warn)}
+.alert{display:none}
+.alert.show{display:flex}
+
+/* predict button */
+.predict-btn{width:100%;height:52px;background:var(--teal);border:none;border-radius:var(--r2);color:#fff;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:8px;text-transform:uppercase}
+.predict-btn:hover{background:var(--teal-hover);transform:translateY(-1px);box-shadow:0 6px 20px rgba(13,158,117,.35)}
+.predict-btn:active{transform:translateY(0);box-shadow:none}
+.predict-btn:disabled{background:#9ca3af;cursor:not-allowed;transform:none;box-shadow:none}
+.predict-btn svg{width:20px;height:20px;stroke:#fff;stroke-width:2.5;fill:none}
+.spinner{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── RESULT PANEL ── */
+.result-panel{display:flex;flex-direction:column;gap:20px}
+.result-card{background:var(--navy);border-radius:var(--r);padding:28px;text-align:center;border:1px solid rgba(255,255,255,.06)}
+.result-label{font-size:11px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:#8fa3c0;margin-bottom:8px}
+.result-amount{font-family:'Syne',sans-serif;font-size:clamp(32px,6vw,44px);font-weight:800;color:#fff;line-height:1;margin-bottom:4px}
+.result-amount span{color:var(--teal)}
+.result-placeholder{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;color:#2a3f5c;margin:8px 0}
+
+/* gauge */
+.gauge-wrap{margin:20px 0 10px;position:relative}
+.gauge-svg{width:100%;max-width:240px}
+.gauge-needle{transform-origin:50% 100%;transition:transform .8s cubic-bezier(.34,1.56,.64,1)}
+.confidence-row{display:flex;justify-content:center;align-items:center;gap:6px;font-size:13px;color:#8fa3c0}
+.confidence-dot{width:8px;height:8px;border-radius:50%;background:var(--teal)}
+.confidence-val{font-weight:600;color:#fff}
+
+/* stat cards */
+.stat-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px}
+.stat-card .s-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.stat-card .s-value{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text)}
+.stat-card .s-sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* info box */
+.info-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:16px}
+.info-box .ib-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:10px}
+.spec-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.spec-row:last-child{border-bottom:none}
+.spec-key{color:var(--text2)}
+.spec-val{font-weight:600;color:var(--text)}
+
+/* footer note */
+.footer-note{font-size:12px;color:var(--text3);text-align:center;margin-top:4px}
+.footer-note strong{color:var(--text2)}
+
+/* page footer */
+footer{background:var(--navy);border-top:1px solid rgba(255,255,255,.08);padding:20px 24px;text-align:center;font-size:12px;color:#5a7090}
+footer strong{color:var(--gold)}
+
+/* RESPONSIVE */
+@media(max-width:480px){
+  .card{padding:20px}
+  .form-grid{grid-template-columns:1fr}
+}
+
+/* custom scrollbar */
+.combo-dropdown::-webkit-scrollbar{width:5px}
+.combo-dropdown::-webkit-scrollbar-track{background:transparent}
+.combo-dropdown::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">PRICE FORGE</div>
+      <div class="brand-sub">Powered by Sage</div>
+    </div>
+  </div>
+  <div class="header-badge">FUTA Statistics Dept.</div>
+</header>
+
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-eyebrow">Nigeria's Laptop Price Intelligence</div>
+  <h1>Predict Your <em>Ideal</em><br/>Laptop Price</h1>
+  <p>Using smart statistics and Nigeria's leading price database — fill in your laptop specs below to get an instant estimate.</p>
+</section>
+
+<div class="main-wrap">
+
+  <!-- LEFT: FORM -->
+  <div>
+    <div class="card">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Your Laptop Specs
+      </div>
+
+      <div id="global-alert" class="alert alert-error">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="global-alert-msg"></span>
+      </div>
+
+      <div class="form-grid">
+
+        <!-- BRAND -->
+        <div class="field">
+          <label>Select Brand <span class="req">*</span></label>
+          <div class="combo" id="combo-brand">
+            <div class="combo-input-wrap">
+              <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input class="combo-input" id="brand-display" placeholder="HP, Dell, Apple, Lenovo…" readonly/>
+              <svg class="combo-arrow" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="combo-dropdown">
+              <div class="combo-search"><input type="text" placeholder="Search brands…" id="brand-search"/></div>
+              <div id="brand-list"></div>
+            </div>
+          </div>
+          <div class="field-error" id="err-brand" style="display:none">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Please select a brand.
+          </div>
+        </div>
+
+        <!-- SERIES -->
+        <div class="field">
+          <label>Model Series <span class="req">*</span></label>
+          <div class="combo" id="combo-series">
+            <div class="combo-input-wrap">
+              <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input class="combo-input" id="series-display" placeholder="Select brand first…" readonly/>
+              <svg class="combo-arrow" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="combo-dropdown">
+              <div class="combo-search"><input type="text" placeholder="Search series…" id="series-search"/></div>
+              <div id="series-list"></div>
+            </div>
+          </div>
+          <div class="field-error" id="err-series" style="display:none">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Please select a series.
+          </div>
+        </div>
+
+        <!-- PROCESSOR -->
+        <div class="field">
+          <label>Processor <span class="req">*</span></label>
+          <div class="combo" id="combo-proc">
+            <div class="combo-input-wrap">
+              <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input class="combo-input" id="proc-display" placeholder="Core i5, Ryzen 7…" readonly/>
+              <svg class="combo-arrow" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="combo-dropdown">
+              <div class="combo-search"><input type="text" placeholder="Search processors…" id="proc-search"/></div>
+              <div id="proc-list"></div>
+            </div>
+          </div>
+          <div class="field-error" id="err-proc" style="display:none">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Please select a processor.
+          </div>
+        </div>
+
+        <!-- RAM -->
+        <div class="field">
+          <label>RAM (GB) <span class="req">*</span></label>
+          <div class="combo" id="combo-ram">
+            <div class="combo-input-wrap">
+              <svg class="search-icon" viewBox="0 0 24 24"><rect x="2" y="8" width="20" height="8" rx="2"/><line x1="6" y1="8" x2="6" y2="16"/><line x1="10" y1="8" x2="10" y2="16"/><line x1="14" y1="8" x2="14" y2="16"/><line x1="18" y1="8" x2="18" y2="16"/></svg>
+              <input class="combo-input" id="ram-display" placeholder="4, 8, 16, 32 GB…" readonly/>
+              <svg class="combo-arrow" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="combo-dropdown">
+              <div id="ram-list"></div>
+            </div>
+          </div>
+          <div class="field-error" id="err-ram" style="display:none">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Please select a RAM size.
+          </div>
+        </div>
+
+        <!-- STORAGE -->
+        <div class="field">
+          <label>Storage Capacity <span class="req">*</span></label>
+          <div class="combo" id="combo-storage">
+            <div class="combo-input-wrap">
+              <svg class="search-icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+              <input class="combo-input" id="storage-display" placeholder="256 GB, 512 GB, 1 TB…" readonly/>
+              <svg class="combo-arrow" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="combo-dropdown">
+              <div id="storage-list"></div>
+            </div>
+          </div>
+          <div class="field-error" id="err-storage" style="display:none">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Please select a storage size.
+          </div>
+        </div>
+
+        <!-- STORAGE TYPE -->
+        <div class="field">
+          <label>Storage Type <span class="req">*</span></label>
+          <div class="toggle-group" id="storage-type-group">
+            <button class="toggle-btn active" data-val="1" onclick="selectStorageType(this)">SSD</button>
+            <button class="toggle-btn" data-val="0" onclick="selectStorageType(this)">eMMC</button>
+            <button class="toggle-btn" data-val="hdd" onclick="selectStorageType(this)">HDD</button>
+          </div>
+        </div>
+
+        <!-- GPU + TOUCHSCREEN -->
+        <div class="field full">
+          <label>Additional Features</label>
+          <div class="check-row">
+            <label class="check-label">
+              <input type="checkbox" id="chk-gpu"/>
+              Dedicated GPU
+            </label>
+            <label class="check-label">
+              <input type="checkbox" id="chk-touch"/>
+              Touchscreen
+            </label>
+          </div>
+        </div>
+
+      </div><!-- /form-grid -->
+
+      <div style="margin-top:24px">
+        <button class="predict-btn" id="predict-btn" onclick="predictPrice()">
+          <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          Predict Price (₦)
+        </button>
+      </div>
+
+    </div><!-- /card -->
+  </div>
+
+  <!-- RIGHT: RESULTS -->
+  <div class="result-panel">
+
+    <!-- Price result -->
+    <div class="result-card">
+      <div class="result-label">Your Estimated Price (₦)</div>
+      <div class="result-amount" id="result-price"><span id="price-display">—</span></div>
+      <div id="result-placeholder" class="result-placeholder" style="color:#2a3f5c">Fill in specs<br/>to get estimate</div>
+
+      <!-- Gauge -->
+      <div class="gauge-wrap" id="gauge-wrap" style="display:none">
+        <svg class="gauge-svg" viewBox="0 0 240 140" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#0d9e75"/>
+              <stop offset="50%" stop-color="#c9a227"/>
+              <stop offset="100%" stop-color="#dc2626"/>
+            </linearGradient>
+          </defs>
+          <path d="M 20 120 A 100 100 0 0 1 220 120" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="16" stroke-linecap="round"/>
+          <path id="gauge-arc" d="M 20 120 A 100 100 0 0 1 220 120" fill="none" stroke="url(#gaugeGrad)" stroke-width="16" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="314"/>
+          <line id="gauge-needle" x1="120" y1="120" x2="120" y2="30" stroke="white" stroke-width="3" stroke-linecap="round" transform="rotate(-90,120,120)"/>
+          <circle cx="120" cy="120" r="6" fill="white"/>
+          <text x="20" y="138" fill="#5a7090" font-size="10" font-family="DM Sans,sans-serif">Low</text>
+          <text x="200" y="138" fill="#5a7090" font-size="10" font-family="DM Sans,sans-serif" text-anchor="end">High</text>
+        </svg>
+        <div class="confidence-row">
+          <div class="confidence-dot"></div>
+          <span>Model R²:</span>
+          <span class="confidence-val" id="r2-display">0.865</span>
+          <span style="margin-left:8px;color:#5a7090">(Random Forest)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stat-cards" id="stat-cards" style="display:none">
+      <div class="stat-card">
+        <div class="s-label">Price Range</div>
+        <div class="s-value" id="stat-range">—</div>
+        <div class="s-sub">estimated band</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Market Position</div>
+        <div class="s-value" id="stat-position">—</div>
+        <div class="s-sub">vs. dataset</div>
+      </div>
+    </div>
+
+    <!-- Spec summary -->
+    <div class="info-box" id="spec-summary" style="display:none">
+      <div class="ib-title">Prediction Summary</div>
+      <div class="spec-row"><span class="spec-key">Brand</span><span class="spec-val" id="sum-brand">—</span></div>
+      <div class="spec-row"><span class="spec-key">Series</span><span class="spec-val" id="sum-series">—</span></div>
+      <div class="spec-row"><span class="spec-key">Processor</span><span class="spec-val" id="sum-proc">—</span></div>
+      <div class="spec-row"><span class="spec-key">RAM</span><span class="spec-val" id="sum-ram">—</span></div>
+      <div class="spec-row"><span class="spec-key">Storage</span><span class="spec-val" id="sum-storage">—</span></div>
+      <div class="spec-row"><span class="spec-key">GPU / Touch</span><span class="spec-val" id="sum-extra">—</span></div>
+    </div>
+
+    <div class="footer-note">
+      Model: <strong>Random Forest Regressor</strong> · Trained on Nigerian laptop market data
+    </div>
+
+  </div><!-- /result-panel -->
+
+</div><!-- /main-wrap -->
+
+<footer>
+  <strong>Price Forge</strong> — FUTA Statistics Dept. Project &nbsp;·&nbsp; Prices are estimates only, not financial advice
+</footer>
+
+<script>
+// ── DATA FROM TRAINING SET ──────────────────────────────────────────────────
+const BRANDS = ["acer","alienware","apple","asus","dell","hp","hpaay","lenovo","microsoft","msi","omen","panasonic","power","razer","samsung"];
+
+const BRAND_SERIES = {
+  "acer":["aspire","nitro","predator helios neo","travelmate"],
+  "alienware":["standard"],
+  "apple":["baby macbook","mac mini","macbook","macbook air","standard"],
+  "asus":["expertbook","proart","rog strix","rog strix scar","rog zephyrus","standard","tuf","tuff dash","vivobook","vivobook flip","vivobook go","vivobook s","zenbook","zenbook duo"],
+  "dell":["alienware","alienware area","alienware aurora","inspiron","latitude","premium","standard","xps"],
+  "hp":["chromebook","elite","elitebook","envy","omen","omnibook","omnibook flip","pavilion","probook","probook x","spectre","stream","victus","z book fury"],
+  "hpaay":["c victus gaming"],
+  "lenovo":["chromebook","ideapad","legion","standard","thinkbook","thinkpad","yoga"],
+  "microsoft":["surface","surface studio"],
+  "msi":["cyborg","katana hx","titan","titan hx dragon"],
+  "omen":["standard"],
+  "panasonic":["standard"],
+  "power":["standard"],
+  "razer":["blade"],
+  "samsung":["galaxy","galaxy book"]
+};
+
+const PROCESSORS = [
+  "amd ryzen 5","apple m1","apple m2","apple m3","apple m4","apple m5",
+  "celeron","core i3","core i5","core i7","core i9",
+  "core ultra 5","core ultra 7","core ultra 9",
+  "intel core i5","intel core i7","intel core i9","intel xeon",
+  "m1","m2","pentium","ryzen 5","ryzen 7","ryzen 9","snapdragon"
+];
+
+const RAM_OPTIONS = [
+  {label:"2 GB",  val:2},
+  {label:"4 GB",  val:4},
+  {label:"7 GB",  val:7},
+  {label:"8 GB",  val:8},
+  {label:"12 GB", val:12},
+  {label:"16 GB", val:16},
+  {label:"24 GB", val:24},
+  {label:"32 GB", val:32},
+  {label:"64 GB", val:64},
+  {label:"96 GB", val:96},
+  {label:"128 GB",val:128}
+];
+
+const STORAGE_OPTIONS = [
+  {label:"16 GB",  val:16},
+  {label:"32 GB",  val:32},
+  {label:"64 GB",  val:64},
+  {label:"128 GB", val:128},
+  {label:"256 GB", val:256},
+  {label:"500 GB", val:500},
+  {label:"512 GB", val:512},
+  {label:"1 TB",   val:1000},
+  {label:"1024 GB",val:1024},
+  {label:"2 TB",   val:2048},
+  {label:"4 TB",   val:4096}
+];
+
+// ── STATE ───────────────────────────────────────────────────────────────────
+let sel = {brand:null, series:null, proc:null, ram_gb:null, storage_gb:null, is_ssd:1, gpu:false, touch:false};
+
+// ── COMBO FACTORY ───────────────────────────────────────────────────────────
+function makeCombo(comboId, displayId, listId, searchId, items, onSelect, placeholder) {
+  const combo   = document.getElementById(comboId);
+  const display = document.getElementById(displayId);
+  const list    = document.getElementById(listId);
+  const search  = searchId ? document.getElementById(searchId) : null;
+
+  function render(filter) {
+    list.innerHTML = '';
+    const filtered = filter ? items.filter(i => i.toLowerCase().includes(filter.toLowerCase())) : items;
+    if (!filtered.length) {
+      list.innerHTML = '<div class="combo-empty">No results found</div>';
+      return;
+    }
+    filtered.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'combo-option' + (display.dataset.val === item ? ' selected' : '');
+      div.textContent = item.charAt(0).toUpperCase() + item.slice(1);
+      div.onclick = () => {
+        display.value = item.charAt(0).toUpperCase() + item.slice(1);
+        display.dataset.val = item;
+        closeAll();
+        onSelect(item);
+        clearError(comboId.replace('combo-',''));
+      };
+      list.appendChild(div);
+    });
+  }
+
+  display.onclick = (e) => {
+    e.stopPropagation();
+    const wasOpen = combo.classList.contains('open');
+    closeAll();
+    if (!wasOpen) {
+      if (items.length === 0 && placeholder) {
+        showGlobalAlert(placeholder);
+        return;
+      }
+      combo.classList.add('open');
+      render('');
+      if (search) { search.value=''; search.focus(); }
+    }
+  };
+
+  if (search) {
+    search.addEventListener('input', () => render(search.value));
+    search.onclick = e => e.stopPropagation();
+  }
+
+  render('');
+}
+
+function closeAll() {
+  document.querySelectorAll('.combo.open').forEach(c => c.classList.remove('open'));
+}
+document.addEventListener('click', closeAll);
+
+// ── INIT COMBOS ─────────────────────────────────────────────────────────────
+makeCombo('combo-brand','brand-display','brand-list','brand-search', BRANDS, (val) => {
+  sel.brand = val;
+  sel.series = null;
+  const sd = document.getElementById('series-display');
+  sd.value = '';
+  sd.dataset.val = '';
+  sd.placeholder = 'Now pick a series…';
+  const seriesList = BRAND_SERIES[val] || [];
+  makeCombo('combo-series','series-display','series-list','series-search', seriesList, (v) => {
+    sel.series = v;
+    clearError('series');
+  }, null);
+}, null);
+
+makeCombo('combo-series','series-display','series-list','series-search', [], (val) => {
+  sel.series = val;
+}, 'Please select a brand first.');
+
+makeCombo('combo-proc','proc-display','proc-list','proc-search', PROCESSORS, (val) => {
+  sel.proc = val;
+}, null);
+
+// RAM — simple list no search
+(function(){
+  const combo   = document.getElementById('combo-ram');
+  const display = document.getElementById('ram-display');
+  const list    = document.getElementById('ram-list');
+  function render() {
+    list.innerHTML = '';
+    RAM_OPTIONS.forEach(opt => {
+      const div = document.createElement('div');
+      div.className = 'combo-option' + (sel.ram_gb === opt.val ? ' selected' : '');
+      div.textContent = opt.label;
+      div.onclick = () => {
+        display.value = opt.label;
+        display.dataset.val = opt.val;
+        sel.ram_gb = opt.val;
+        closeAll();
+        clearError('ram');
+      };
+      list.appendChild(div);
+    });
+  }
+  display.onclick = (e) => {
+    e.stopPropagation();
+    const wasOpen = combo.classList.contains('open');
+    closeAll();
+    if (!wasOpen) { combo.classList.add('open'); render(); }
+  };
+  render();
+})();
+
+// STORAGE — simple list no search
+(function(){
+  const combo   = document.getElementById('combo-storage');
+  const display = document.getElementById('storage-display');
+  const list    = document.getElementById('storage-list');
+  function render() {
+    list.innerHTML = '';
+    STORAGE_OPTIONS.forEach(opt => {
+      const div = document.createElement('div');
+      div.className = 'combo-option' + (sel.storage_gb === opt.val ? ' selected' : '');
+      div.textContent = opt.label;
+      div.onclick = () => {
+        display.value = opt.label;
+        display.dataset.val = opt.val;
+        sel.storage_gb = opt.val;
+        closeAll();
+        clearError('storage');
+      };
+      list.appendChild(div);
+    });
+  }
+  display.onclick = (e) => {
+    e.stopPropagation();
+    const wasOpen = combo.classList.contains('open');
+    closeAll();
+    if (!wasOpen) { combo.classList.add('open'); render(); }
+  };
+  render();
+})();
+
+// ── STORAGE TYPE ─────────────────────────────────────────────────────────────
+function selectStorageType(btn) {
+  document.querySelectorAll('#storage-type-group .toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const v = btn.dataset.val;
+  sel.is_ssd = v === 'hdd' ? 0 : parseInt(v);
+}
+
+// ── CHECKBOXES ───────────────────────────────────────────────────────────────
+document.getElementById('chk-gpu').addEventListener('change', e => sel.gpu = e.target.checked);
+document.getElementById('chk-touch').addEventListener('change', e => sel.touch = e.target.checked);
+
+// ── VALIDATION ───────────────────────────────────────────────────────────────
+function showError(field, show) {
+  const el = document.getElementById('err-' + field);
+  if (el) el.style.display = show ? 'flex' : 'none';
+  const combo = document.getElementById('combo-' + field);
+  if (combo) {
+    const inp = combo.querySelector('.combo-input');
+    if (inp) inp.classList.toggle('error', show);
+  }
+}
+function clearError(field) { showError(field, false); hideGlobalAlert(); }
+
+function showGlobalAlert(msg) {
+  const a = document.getElementById('global-alert');
+  document.getElementById('global-alert-msg').textContent = msg;
+  a.classList.add('show');
+}
+function hideGlobalAlert() {
+  document.getElementById('global-alert').classList.remove('show');
+}
+
+function validate() {
+  let ok = true;
+  if (!sel.brand)   { showError('brand',   true); ok = false; }
+  if (!sel.series)  { showError('series',  true); ok = false; }
+  if (!sel.proc)    { showError('proc',    true); ok = false; }
+  if (!sel.ram_gb)  { showError('ram',     true); ok = false; }
+  if (!sel.storage_gb) { showError('storage', true); ok = false; }
+  if (!ok) showGlobalAlert('Please fill in all required fields before predicting.');
+  return ok;
+}
+
+// ── PREDICT ──────────────────────────────────────────────────────────────────
+async function predictPrice() {
+  hideGlobalAlert();
+  if (!validate()) return;
+
+  const btn = document.getElementById('predict-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Predicting…';
+
+  const payload = {
+    brand_name:      sel.brand,
+    series_name:     sel.series,
+    Processor_clean: sel.proc,
+    RAM_GB:          sel.ram_gb,
+    storage_gb:      sel.storage_gb,
+    is_ssd:          sel.is_ssd,
+    GPU:             sel.gpu,
+    Touchscreen:     sel.touch
+  };
+
+  try {
+    // ── CHANGE THIS URL TO YOUR BACKEND ENDPOINT ──
+    const res = await fetch('/predict', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({error: 'Server error ' + res.status}));
+      throw new Error(err.error || err.message || 'Prediction failed');
+    }
+
+    const data = await res.json();
+    const price = data.price ?? data.predicted_price ?? data.prediction;
+
+    if (price == null) throw new Error('No price returned from server.');
+
+    showResult(price);
+  } catch (err) {
+    showGlobalAlert('Error: ' + err.message + ' — Check that your backend is running and the /predict endpoint is reachable.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Predict Price (₦)';
+  }
+}
+
+// ── SHOW RESULT ───────────────────────────────────────────────────────────────
+function showResult(price) {
+  document.getElementById('result-placeholder').style.display = 'none';
+  document.getElementById('price-display').textContent = '₦' + Math.round(price).toLocaleString('en-NG');
+  document.getElementById('result-price').style.opacity = 1;
+
+  // gauge
+  const gaugeWrap = document.getElementById('gauge-wrap');
+  gaugeWrap.style.display = 'block';
+  const pct = Math.min(1, Math.max(0, (Math.log1p(price) - Math.log1p(50000)) / (Math.log1p(5000000) - Math.log1p(50000))));
+  const arc = document.getElementById('gauge-arc');
+  arc.style.strokeDashoffset = 314 * (1 - pct);
+  const needle = document.getElementById('gauge-needle');
+  const angle = -90 + pct * 180;
+  needle.setAttribute('transform', `rotate(${angle},120,120)`);
+
+  // stat cards
+  document.getElementById('stat-cards').style.display = 'grid';
+  const high = Math.floor(price / 1000) * 1000;
+  const low  = Math.floor(price * 0.93 / 1000) * 1000;
+  document.getElementById('stat-range').textContent = '₦' + low.toLocaleString('en-NG') + ' – ₦' + high.toLocaleString('en-NG');
+  const pos = price < 200000 ? 'Budget' : price < 600000 ? 'Mid-range' : price < 1500000 ? 'Premium' : 'Flagship';
+  document.getElementById('stat-position').textContent = pos;
+
+  // spec summary
+  document.getElementById('spec-summary').style.display = 'block';
+  document.getElementById('sum-brand').textContent   = capitalize(sel.brand);
+  document.getElementById('sum-series').textContent  = capitalize(sel.series);
+  document.getElementById('sum-proc').textContent    = capitalize(sel.proc);
+  document.getElementById('sum-ram').textContent     = sel.ram_gb + ' GB';
+  document.getElementById('sum-storage').textContent = formatStorage(sel.storage_gb) + (sel.is_ssd === 1 ? ' SSD' : sel.is_ssd === 0 ? ' eMMC' : ' HDD');
+  document.getElementById('sum-extra').textContent   = [sel.gpu ? 'Dedicated GPU' : 'No GPU', sel.touch ? 'Touchscreen' : 'No Touch'].join(' / ');
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+function formatStorage(gb) {
+  if (gb >= 1024) return (gb / 1024) + ' TB';
+  if (gb === 1000) return '1 TB';
+  return gb + ' GB';
+}
+</script>
+</body>
+</html>
