@@ -479,7 +479,8 @@ const STORAGE_OPTIONS = [
 let sel = {brand:null, series:null, proc:null, ram_gb:null, storage_gb:null, is_ssd:1, gpu:false, touch:false};
 
 // ── COMBO FACTORY ───────────────────────────────────────────────────────────
-function makeCombo(comboId, displayId, listId, searchId, items, onSelect, placeholder) {
+// Updated to accept a dynamic items function
+function makeCombo(comboId, displayId, listId, searchId, items, onSelect, placeholder, getDynamicItems) {
   const combo   = document.getElementById(comboId);
   const display = document.getElementById(displayId);
   const list    = document.getElementById(listId);
@@ -487,7 +488,12 @@ function makeCombo(comboId, displayId, listId, searchId, items, onSelect, placeh
 
   function render(filter) {
     list.innerHTML = '';
-    const filtered = filter ? items.filter(i => i.toLowerCase().includes(filter.toLowerCase())) : items;
+    
+    // Use dynamic items if a function is provided, otherwise use static list
+    const currentItems = getDynamicItems ? getDynamicItems() : items;
+    
+    const filtered = filter ? currentItems.filter(i => i.toLowerCase().includes(filter.toLowerCase())) : currentItems;
+    
     if (!filtered.length) {
       list.innerHTML = '<div class="combo-empty">No results found</div>';
       return;
@@ -512,8 +518,9 @@ function makeCombo(comboId, displayId, listId, searchId, items, onSelect, placeh
     const wasOpen = combo.classList.contains('open');
     closeAll();
     if (!wasOpen) {
-      if (items.length === 0 && placeholder) {
-        showGlobalAlert(placeholder);
+      // Logic for checking if brand is selected before showing series
+      if (comboId === 'combo-series' && !sel.brand) {
+        showGlobalAlert(placeholder || 'Please select a brand first.');
         return;
       }
       combo.classList.add('open');
@@ -539,24 +546,39 @@ document.addEventListener('click', closeAll);
 makeCombo('combo-brand','brand-display','brand-list','brand-search', BRANDS, (val) => {
   sel.brand = val;
   sel.series = null;
+  // Reset series and processor if brand changes
   const sd = document.getElementById('series-display');
   sd.value = '';
   sd.dataset.val = '';
-  sd.placeholder = 'Now pick a series…';
-  const seriesList = BRAND_SERIES[val] || [];
-  makeCombo('combo-series','series-display','series-list','series-search', seriesList, (v) => {
-    sel.series = v;
-    clearError('series');
-  }, null);
+  
+  const pd = document.getElementById('proc-display');
+  if (pd.value.toLowerCase().includes('m1') || pd.value.toLowerCase().includes('m2') || pd.value.toLowerCase().includes('m3')) {
+    if (val !== 'apple') {
+      pd.value = '';
+      pd.dataset.val = '';
+      sel.proc = null;
+    }
+  }
 }, null);
 
 makeCombo('combo-series','series-display','series-list','series-search', [], (val) => {
   sel.series = val;
-}, 'Please select a brand first.');
+}, 'Please select a brand first.', () => {
+  return BRAND_SERIES[sel.brand] || [];
+});
 
+// Processor logic: Only show Apple chips if brand is Apple
 makeCombo('combo-proc','proc-display','proc-list','proc-search', PROCESSORS, (val) => {
   sel.proc = val;
-}, null);
+}, null, () => {
+  const appleChips = ["apple m1","apple m2","apple m3","apple m4","apple m5","m1","m2"];
+  if (sel.brand === 'apple') {
+    return PROCESSORS;
+  } else {
+    // Filter out chips that belong exclusively to Apple
+    return PROCESSORS.filter(p => !appleChips.includes(p.toLowerCase()));
+  }
+});
 
 // RAM — simple list no search
 (function(){
@@ -683,7 +705,6 @@ async function predictPrice() {
   };
 
   try {
-    // ── CHANGE THIS URL TO YOUR BACKEND ENDPOINT ──
     const res = await fetch('/predict', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -702,7 +723,7 @@ async function predictPrice() {
 
     showResult(price);
   } catch (err) {
-    showGlobalAlert('Error: ' + err.message + ' — Check that your backend is running and the /predict endpoint is reachable.');
+    showGlobalAlert('Error: ' + err.message + ' — Check that your backend is running.');
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> Predict Price (₦)';
@@ -750,5 +771,3 @@ function formatStorage(gb) {
   return gb + ' GB';
 }
 </script>
-</body>
-</html>
